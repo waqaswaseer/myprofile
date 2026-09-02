@@ -770,6 +770,7 @@ section {
     color: var(--primary-color);
     text-decoration: none;
     font-weight: 600;
+    overflow-wrap: anywhere;
     transition: all 0.3s ease;
 }
 
