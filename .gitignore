@@ -1,0 +1,12 @@
+# Local WordPress configuration and runtime data
+wp-config.php
+wp-content/database/
+wp-content/uploads/
+wp-content/cache/
+wp-content/upgrade/
+wp-content/debug.log
+
+# Local and editor files
+.DS_Store
+Thumbs.db
+.vscode/
