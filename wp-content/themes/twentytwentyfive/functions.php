@@ -171,6 +171,42 @@ function waqasprofile_configure_homepage() {
 add_action( 'init', 'waqasprofile_configure_homepage', 20 );
 
 /**
+ * Create the contact message table used by the profile form.
+ *
+ * @return void
+ */
+function waqasprofile_install_contact_table() {
+	if ( '1' === get_option( 'waqasprofile_contact_table_version' ) ) {
+		return;
+	}
+
+	global $wpdb;
+
+	$table_name      = $wpdb->prefix . 'waqasprofile_messages';
+	$charset_collate = $wpdb->get_charset_collate();
+
+	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+	dbDelta(
+		"CREATE TABLE {$table_name} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			name varchar(100) NOT NULL,
+			email varchar(190) NOT NULL,
+			subject varchar(200) NOT NULL,
+			message text NOT NULL,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY email (email),
+			KEY created_at (created_at)
+		) {$charset_collate};"
+	);
+
+	if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name ) {
+		update_option( 'waqasprofile_contact_table_version', '1' );
+	}
+}
+add_action( 'init', 'waqasprofile_install_contact_table', 10 );
+
+/**
  * Handle the public portfolio contact form without exposing contact details
  * in the template. Messages are sent to the site's configured admin address.
  */
@@ -193,6 +229,25 @@ function waqasprofile_handle_contact() {
 	$message = isset( $_POST['contact_message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['contact_message'] ) ) : '';
 
 	if ( '' === $name || ! is_email( $email ) || '' === $subject || '' === $message ) {
+		wp_safe_redirect( add_query_arg( 'contact', 'error', $redirect ) );
+		exit;
+	}
+
+	global $wpdb;
+	$table_name = $wpdb->prefix . 'waqasprofile_messages';
+	$stored     = $wpdb->insert(
+		$table_name,
+		array(
+			'name'       => $name,
+			'email'      => $email,
+			'subject'    => $subject,
+			'message'    => $message,
+			'created_at' => current_time( 'mysql' ),
+		),
+		array( '%s', '%s', '%s', '%s', '%s' )
+	);
+
+	if ( false === $stored ) {
 		wp_safe_redirect( add_query_arg( 'contact', 'error', $redirect ) );
 		exit;
 	}
